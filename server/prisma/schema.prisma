@@ -1,0 +1,185 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String   // bcrypt hashed
+  age       Int?
+  weight    Int?     // kg
+  incomeRange String? // "0-100k" | "100k-500k" etc
+  currency  String   @default("NPR")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts     Account[]
+  transactions Transaction[]
+  budgets      Budget[]
+  workoutLogs  WorkoutLog[]
+  bodyMetrics  BodyMetric[]
+  stepLogs     StepLog[]
+  nutritionLogs NutritionLog[]
+  goals        Goal[]
+  lifeScores   LifeScore[]
+  notifications Notification[]
+}
+
+model Account {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String   // "My Salary Account", "eSewa Wallet" etc
+  type      String   // cash, bank, esewa, khalti, other
+  balance   Float    // Stored as decrypted at runtime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+
+  @@index([userId])
+}
+
+model Transaction {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  amount    Float
+  category  String   // खाना, घर भाडा, यातायात, जिम, स्वास्थ्य, मनोरञ्जन, शिक्षा etc
+  type      String   // income or expense
+  note      String?
+  date      DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([date])
+}
+
+model Budget {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category      String
+  limitAmount   Float    // रु
+  period        String   // daily, weekly, monthly
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, category, period])
+  @@index([userId])
+}
+
+model WorkoutLog {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           String   // running, cycling, gym, yoga, sports etc
+  durationMinutes Int
+  caloriesBurned Int?
+  note           String?
+  date           DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([date])
+}
+
+model BodyMetric {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weight   Float    // kg
+  bmi      Float?
+  bodyFat  Float?   // percentage
+  date     DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([date])
+}
+
+model StepLog {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  steps    Int
+  date     DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+}
+
+model NutritionLog {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calories Int
+  protein  Int?     // grams
+  carbs    Int?     // grams
+  fat      Int?     // grams
+  mealName String?
+  date     DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([date])
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // fitness, wealth, nutrition etc
+  targetValue Float
+  currentValue Float
+  deadline    DateTime
+  status      String   @default("active") // active, completed, paused
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model LifeScore {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score        Int      // 0–100
+  fitnessScore Int      // 0–100
+  wealthScore  Int      // 0–100
+  date         DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // budget_alert, workout_reminder, expense_reminder, streak_alert, daily_summary
+  title     String
+  titleNp   String   // Nepali version
+  message   String
+  messageNp String   // Nepali version
+  read      Boolean  @default(false)
+  data      String?  // JSON stringified metadata
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([read])
+}
