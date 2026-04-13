@@ -1,0 +1,12 @@
+{
+  "watch": ["src"],
+  "ignore": ["node_modules", ".env", "*.log"],
+  "ext": "js",
+  "delay": 500,
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "events": {
+    "restart": "echo 'Server restarting...'"
+  }
+}

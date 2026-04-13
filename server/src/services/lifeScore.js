@@ -102,7 +102,7 @@ export async function calculateLifeScore(userId) {
   
   // === FINAL SCORE ===
   const lifeScore = Math.round((fitnessScore + wealthScore) / 2);
-  
+   
   // Store in database
   const today = new Date();
   today.setHours(0, 0, 0, 0);

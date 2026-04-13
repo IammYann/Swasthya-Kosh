@@ -1,5 +1,5 @@
 export function errorHandler(err, req, res, next) {
-  console.error('Error:', err);
+  console.error('Error:', err?.message || err);
   
   // Zod validation error
   if (err.name === 'ZodError') {
@@ -9,13 +9,22 @@ export function errorHandler(err, req, res, next) {
     });
   }
   
-  // Prisma errors
+  // Prisma connection errors
+  if (err.code === 'P1000' || err.code === 'P1001' || err.code === 'P1002') {
+    console.error('Database connection error:', err.message);
+    return res.status(503).json({
+      error: 'Database connection failed. Please try again.'
+    });
+  }
+  
+  // Prisma unique constraint violation
   if (err.code === 'P2002') {
     return res.status(409).json({
       error: 'Unique constraint violation'
     });
   }
   
+  // Prisma resource not found
   if (err.code === 'P2025') {
     return res.status(404).json({
       error: 'Resource not found'
@@ -26,6 +35,6 @@ export function errorHandler(err, req, res, next) {
   res.status(500).json({
     error: process.env.NODE_ENV === 'production' 
       ? 'Internal server error' 
-      : err.message
+      : err.message || 'Unknown error'
   });
 }

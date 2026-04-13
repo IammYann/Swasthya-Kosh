@@ -40,8 +40,33 @@ export default function LandingPage() {
 
   return (
     <div className="bg-navy text-white overflow-hidden">
+      {/* Navigation Bar */}
+      <nav className="fixed top-0 left-0 right-0 bg-navy/80 backdrop-blur border-b border-teal/20 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <Link to="/" className="flex items-center gap-2">
+              <span className="text-2xl font-bold text-teal">🏔️</span>
+              <span className="text-xl font-bold">स्वास्थ्य कोष</span>
+            </Link>
+            <div className="flex items-center gap-4">
+              <Link
+                to="/login"
+                className="px-4 py-2 rounded-lg font-semibold text-teal border border-teal hover:bg-teal/10 transition"
+              >
+                Login
+              </Link>
+              <Link
+                to="/register"
+                className="px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-teal to-teal text-navy hover:shadow-lg transition"
+              >
+                Sign Up
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
       {/* Hero Section */}
-      <section className="min-h-screen flex items-center justify-center relative overflow-hidden px-4">
+      <section className="min-h-screen flex items-center justify-center relative overflow-hidden px-4 pt-16">
         {/* Animated background */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-teal/20 rounded-full blur-3xl animate-pulse"></div>

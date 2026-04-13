@@ -31,7 +31,12 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-navy via-navy to-blue-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-navy via-navy to-blue-900 flex items-center justify-center px-4 relative">
+      {/* Home Button */}
+      <Link to="/" className="absolute top-4 left-4 flex items-center gap-2 text-teal hover:text-teal/80 transition">
+        <span className="text-2xl">←</span>
+        <span className="font-semibold">Back</span>
+      </Link>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
