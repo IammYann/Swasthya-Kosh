@@ -9,21 +9,26 @@ export default function Navbar() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const [lifeScore, setLifeScore] = useState(null);
+  const [profilePicture, setProfilePicture] = useState(null);
 
   useEffect(() => {
-    async function fetchLifeScore() {
+    async function fetchData() {
       try {
-        const response = await api.get('/insights');
-        setLifeScore(response.data.score);
+        const [scoreRes, profileRes] = await Promise.all([
+          api.get('/insights'),
+          api.get('/auth/me')
+        ]);
+        setLifeScore(scoreRes.data.score);
+        setProfilePicture(profileRes.data.profilePicture);
       } catch (err) {
-        console.error('Failed to fetch life score:', err);
+        console.error('Failed to fetch data:', err);
       }
     }
     
-    fetchLifeScore();
+    fetchData();
     
     // Refresh Life Score every 10 seconds
-    const interval = setInterval(fetchLifeScore, 10000);
+    const interval = setInterval(fetchData, 10000);
     
     return () => clearInterval(interval);
   }, []);
@@ -74,8 +79,18 @@ export default function Navbar() {
               {i18n.language === 'en' ? 'नेपाली' : 'English'}
             </button>
 
-            <Link to="/app/profile" className="text-teal hover:text-gold transition">
-              👤
+            <Link to="/app/profile" className="hover:opacity-80 transition">
+              {profilePicture ? (
+                <img
+                  src={profilePicture}
+                  alt="Profile"
+                  className="w-10 h-10 rounded-full object-cover border-2 border-teal/50"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-teal/20 border-2 border-teal/50 flex items-center justify-center text-lg">
+                  👤
+                </div>
+              )}
             </Link>
 
             <button

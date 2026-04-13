@@ -11,26 +11,27 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String   // bcrypt hashed
-  age       Int?
-  weight    Int?     // kg
-  incomeRange String? // "0-100k" | "100k-500k" etc
-  currency  String   @default("NPR")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  password       String   // bcrypt hashed
+  age            Int?
+  weight         Int?     // kg
+  incomeRange    String?  // "0-100k" | "100k-500k" etc
+  currency       String   @default("NPR")
+  profilePicture String?  // base64 encoded image or URL
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  accounts     Account[]
-  transactions Transaction[]
-  budgets      Budget[]
-  workoutLogs  WorkoutLog[]
-  bodyMetrics  BodyMetric[]
-  stepLogs     StepLog[]
+  accounts      Account[]
+  transactions  Transaction[]
+  budgets       Budget[]
+  workoutLogs   WorkoutLog[]
+  bodyMetrics   BodyMetric[]
+  stepLogs      StepLog[]
   nutritionLogs NutritionLog[]
-  goals        Goal[]
-  lifeScores   LifeScore[]
+  goals         Goal[]
+  lifeScores    LifeScore[]
   notifications Notification[]
 }
 

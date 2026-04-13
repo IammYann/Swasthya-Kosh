@@ -119,11 +119,43 @@ router.get('/me', authMiddleware, async (req, res, next) => {
         age: true,
         weight: true,
         currency: true,
+        profilePicture: true,
         createdAt: true
       }
     });
     
     res.json(user);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Update profile
+router.patch('/profile', authMiddleware, async (req, res, next) => {
+  try {
+    const { name, age, weight, profilePicture } = req.body;
+    
+    const updatedUser = await prisma.user.update({
+      where: { id: req.userId },
+      data: {
+        ...(name && { name }),
+        ...(age !== undefined && { age: age ? parseInt(age) : null }),
+        ...(weight !== undefined && { weight: weight ? parseInt(weight) : null }),
+        ...(profilePicture !== undefined && { profilePicture })
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        age: true,
+        weight: true,
+        currency: true,
+        profilePicture: true,
+        createdAt: true
+      }
+    });
+    
+    res.json(updatedUser);
   } catch (err) {
     next(err);
   }
