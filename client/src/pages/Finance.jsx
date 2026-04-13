@@ -52,7 +52,6 @@ export default function Finance() {
       });
 
       setNewTransaction({ amount: '', category: '', type: 'expense', note: '' });
-      alert('Transaction added successfully!');
       
       // Refetch data
       const [transRes, summRes] = await Promise.all([
@@ -61,6 +60,11 @@ export default function Finance() {
       ]);
       setTransactions(transRes.data);
       setSummary(summRes.data);
+      
+      // Recalculate Life Score
+      await api.post('/insights/recalculate');
+      
+      alert('Transaction added successfully!');
     } catch (err) {
       console.error('Failed to add transaction:', err);
       alert('Failed to add transaction: ' + (err.response?.data?.error || err.message));
@@ -99,8 +103,9 @@ export default function Finance() {
 
     try {
       await api.post('/budgets', {
-        ...newBudget,
-        limit: parseFloat(newBudget.limit)
+        category: newBudget.category,
+        limitAmount: parseFloat(newBudget.limit),
+        period: newBudget.period || 'monthly'
       });
 
       setNewBudget({ category: '', limit: '' });

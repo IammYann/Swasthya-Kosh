@@ -73,7 +73,9 @@ export async function calculateLifeScore(userId) {
       .filter(t => t.category === budget.category && t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
     
-    const adherence = Math.max(0, 100 - (spent / budget.limitAmount) * 100);
+    const adherence = budget.limitAmount > 0 
+      ? Math.max(0, 100 - (spent / budget.limitAmount) * 100)
+      : 0;
     totalBudgetAdherence += adherence;
     budgetCount++;
   }

@@ -46,8 +46,8 @@ router.post('/workouts', authMiddleware, async (req, res, next) => {
       data: {
         userId: req.userId,
         type: data.type,
-        durationMinutes: data.durationMinutes,
-        caloriesBurned: data.caloriesBurned,
+        durationMinutes: parseInt(data.durationMinutes),
+        caloriesBurned: data.caloriesBurned ? parseInt(data.caloriesBurned) : null,
         note: data.note,
         date: new Date(data.date)
       }
@@ -94,6 +94,8 @@ router.post('/steps', authMiddleware, async (req, res, next) => {
     const parsedDate = new Date(date);
     parsedDate.setHours(0, 0, 0, 0);
     
+    const parsedSteps = parseInt(steps);
+    
     // Check if already exists for this date
     const existing = await prisma.stepLog.findFirst({
       where: {
@@ -105,7 +107,7 @@ router.post('/steps', authMiddleware, async (req, res, next) => {
     if (existing) {
       const updated = await prisma.stepLog.update({
         where: { id: existing.id },
-        data: { steps }
+        data: { steps: parsedSteps }
       });
       return res.json(updated);
     }
@@ -113,7 +115,7 @@ router.post('/steps', authMiddleware, async (req, res, next) => {
     const stepLog = await prisma.stepLog.create({
       data: {
         userId: req.userId,
-        steps,
+        steps: parsedSteps,
         date: parsedDate
       }
     });
@@ -150,9 +152,9 @@ router.post('/body-metrics', authMiddleware, async (req, res, next) => {
     const metric = await prisma.bodyMetric.create({
       data: {
         userId: req.userId,
-        weight,
-        bmi,
-        bodyFat,
+        weight: parseFloat(weight),
+        bmi: bmi ? parseFloat(bmi) : null,
+        bodyFat: bodyFat ? parseFloat(bodyFat) : null,
         date: new Date(date)
       }
     });
@@ -198,10 +200,10 @@ router.post('/nutrition', authMiddleware, async (req, res, next) => {
     const nutrition = await prisma.nutritionLog.create({
       data: {
         userId: req.userId,
-        calories,
-        protein,
-        carbs,
-        fat,
+        calories: parseInt(calories),
+        protein: protein ? parseInt(protein) : null,
+        carbs: carbs ? parseInt(carbs) : null,
+        fat: fat ? parseInt(fat) : null,
         mealName,
         date: new Date(date)
       }
