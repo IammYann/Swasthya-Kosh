@@ -1,10 +1,12 @@
 import { prisma } from '../lib/db.js';
+import { retryQuery } from '../utils/queryRetry.js';
 
 /**
  * Calculate Life Score
  * fitnessScore = (workoutsThisWeek/5 * 40) + (avgDailySteps/10000 * 30) + (nutritionLogDays/7 * 30)
  * wealthScore = (savingsRate * 50) + (budgetAdherence * 30) + (netWorthGrowth * 20)
  * lifeScore = (fitnessScore + wealthScore) / 2, capped at 0–100
+ * All queries auto-retry on connection failures
  */
 export async function calculateLifeScore(userId) {
   const now = new Date();
@@ -12,30 +14,36 @@ export async function calculateLifeScore(userId) {
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   
   // === FITNESS SCORE ===
-  const workoutsThisWeek = await prisma.workoutLog.count({
-    where: {
-      userId,
-      date: { gte: sevenDaysAgo }
-    }
-  });
+  const workoutsThisWeek = await retryQuery(() =>
+    prisma.workoutLog.count({
+      where: {
+        userId,
+        date: { gte: sevenDaysAgo }
+      }
+    })
+  );
   
-  const stepLogs = await prisma.stepLog.findMany({
-    where: {
-      userId,
-      date: { gte: sevenDaysAgo }
-    }
-  });
+  const stepLogs = await retryQuery(() =>
+    prisma.stepLog.findMany({
+      where: {
+        userId,
+        date: { gte: sevenDaysAgo }
+      }
+    })
+  );
   
   const totalSteps = stepLogs.reduce((sum, log) => sum + log.steps, 0);
   const avgDailySteps = stepLogs.length > 0 ? totalSteps / stepLogs.length : 0;
   
-  const nutritionDays = await prisma.nutritionLog.findMany({
-    where: {
-      userId,
-      date: { gte: sevenDaysAgo }
-    },
-    distinct: ['date']
-  });
+  const nutritionDays = await retryQuery(() =>
+    prisma.nutritionLog.findMany({
+      where: {
+        userId,
+        date: { gte: sevenDaysAgo }
+      },
+      distinct: ['date']
+    })
+  );
   
   const workoutScore = Math.min((workoutsThisWeek / 5) * 40, 40);
   const stepScore = Math.min((avgDailySteps / 10000) * 30, 30);
@@ -43,12 +51,14 @@ export async function calculateLifeScore(userId) {
   const fitnessScore = Math.round(workoutScore + stepScore + nutritionScore);
   
   // === WEALTH SCORE ===
-  const transactions = await prisma.transaction.findMany({
-    where: {
-      userId,
-      date: { gte: thirtyDaysAgo }
-    }
-  });
+  const transactions = await retryQuery(() =>
+    prisma.transaction.findMany({
+      where: {
+        userId,
+        date: { gte: thirtyDaysAgo }
+      }
+    })
+  );
   
   const income = transactions
     .filter(t => t.type === 'income')
@@ -61,9 +71,11 @@ export async function calculateLifeScore(userId) {
   const savingsRate = income > 0 ? Math.min(((income - expenses) / income) * 100, 100) : 0;
   
   // Calculate budget adherence
-  const budgets = await prisma.budget.findMany({
-    where: { userId }
-  });
+  const budgets = await retryQuery(() =>
+    prisma.budget.findMany({
+      where: { userId }
+    })
+  );
   
   let totalBudgetAdherence = 0;
   let budgetCount = 0;
@@ -83,17 +95,21 @@ export async function calculateLifeScore(userId) {
   const budgetAdherence = budgetCount > 0 ? totalBudgetAdherence / budgetCount : 0;
   
   // Net worth growth (30-day trend)
-  const firstDayBalance = await prisma.account.aggregate({
-    _sum: { balance: true },
-    where: { userId }
-  });
+  const firstDayBalance = await retryQuery(() =>
+    prisma.account.aggregate({
+      _sum: { balance: true },
+      where: { userId }
+    })
+  );
   
-  const earlierTransactions = await prisma.transaction.findMany({
-    where: {
-      userId,
-      date: { gte: new Date(thirtyDaysAgo.getTime() - 1 * 24 * 60 * 60 * 1000) }
-    }
-  });
+  const earlierTransactions = await retryQuery(() =>
+    prisma.transaction.findMany({
+      where: {
+        userId,
+        date: { gte: new Date(thirtyDaysAgo.getTime() - 1 * 24 * 60 * 60 * 1000) }
+      }
+    })
+  );
   
   const netWorthGrowth = savingsRate > 0 ? Math.min(savingsRate / 2, 20) : 0;
   
@@ -103,40 +119,48 @@ export async function calculateLifeScore(userId) {
   // === FINAL SCORE ===
   const lifeScore = Math.round((fitnessScore + wealthScore) / 2);
    
-  // Store in database
+  // Store in database with retry logic
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  const existingScore = await prisma.lifeScore.findUnique({
-    where: {
-      userId_date: {
-        userId,
-        date: today
+  const existingScore = await retryQuery(() =>
+    prisma.lifeScore.findUnique({
+      where: {
+        userId_date: {
+          userId,
+          date: today
+        }
       }
-    }
-  });
+    })
+  );
   
   if (existingScore) {
-    return await prisma.lifeScore.update({
-      where: { id: existingScore.id },
-      data: { score: lifeScore, fitnessScore, wealthScore }
-    });
+    return await retryQuery(() =>
+      prisma.lifeScore.update({
+        where: { id: existingScore.id },
+        data: { score: lifeScore, fitnessScore, wealthScore }
+      })
+    );
   } else {
-    return await prisma.lifeScore.create({
-      data: {
-        userId,
-        score: lifeScore,
-        fitnessScore,
-        wealthScore,
-        date: today
-      }
-    });
+    return await retryQuery(() =>
+      prisma.lifeScore.create({
+        data: {
+          userId,
+          score: lifeScore,
+          fitnessScore,
+          wealthScore,
+          date: today
+        }
+      })
+    );
   }
 }
 
 export async function getLatestLifeScore(userId) {
-  return await prisma.lifeScore.findFirst({
-    where: { userId },
-    orderBy: { date: 'desc' }
-  });
+  return await retryQuery(() =>
+    prisma.lifeScore.findFirst({
+      where: { userId },
+      orderBy: { date: 'desc' }
+    })
+  );
 }

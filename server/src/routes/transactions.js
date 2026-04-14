@@ -2,6 +2,7 @@ import express from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/db.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { retryQuery } from '../utils/queryRetry.js';
 
 const router = express.Router();
 
@@ -88,61 +89,71 @@ router.post('/', authMiddleware, async (req, res, next) => {
     
     // If no account provided, use or create default "Cash" account
     if (!accountId) {
-      let account = await prisma.account.findFirst({
-        where: {
-          userId: req.userId,
-          name: 'Cash'
-        }
-      });
+      let account = await retryQuery(() =>
+        prisma.account.findFirst({
+          where: {
+            userId: req.userId,
+            name: 'Cash'
+          }
+        })
+      );
       
       if (!account) {
-        account = await prisma.account.create({
-          data: {
-            userId: req.userId,
-            name: 'Cash',
-            type: 'cash',
-            balance: 0
-          }
-        });
+        account = await retryQuery(() =>
+          prisma.account.create({
+            data: {
+              userId: req.userId,
+              name: 'Cash',
+              type: 'cash',
+              balance: 0
+            }
+          })
+        );
       }
       accountId = account.id;
     }
     
     // Verify account belongs to user
-    const account = await prisma.account.findFirst({
-      where: {
-        id: accountId,
-        userId: req.userId
-      }
-    });
+    const account = await retryQuery(() =>
+      prisma.account.findFirst({
+        where: {
+          id: accountId,
+          userId: req.userId
+        }
+      })
+    );
     
     if (!account) {
       return res.status(404).json({ error: 'Account not found' });
     }
     
     // Create transaction
-    const transaction = await prisma.transaction.create({
-      data: {
-        userId: req.userId,
-        accountId: accountId,
-        amount: data.amount,
-        category: data.category,
-        type: data.type,
-        note: data.note,
-        date: new Date(data.date)
-      },
-      include: { account: true }
-    });
+    const transaction = await retryQuery(() =>
+      prisma.transaction.create({
+        data: {
+          userId: req.userId,
+          accountId: accountId,
+          amount: data.amount,
+          category: data.category,
+          type: data.type,
+          note: data.note,
+          date: new Date(data.date)
+        },
+        include: { account: true }
+      })
+    );
     
     // Update account balance
     const newBalance = data.type === 'income' 
       ? account.balance + data.amount
       : account.balance - data.amount;
     
-    await prisma.account.update({
-      where: { id: accountId },
-      data: { balance: newBalance }
-    });
+    await retryQuery(() =>
+      prisma.account.update({
+        where: { id: accountId },
+        data: { balance: newBalance }
+      })
+    );
     
     res.status(201).json(transaction);
   } catch (err) {
@@ -153,30 +164,36 @@ router.post('/', authMiddleware, async (req, res, next) => {
 // Delete transaction
 router.delete('/:id', authMiddleware, async (req, res, next) => {
   try {
-    const transaction = await prisma.transaction.findFirst({
-      where: {
-        id: req.params.id,
-        userId: req.userId
-      }
-    });
+    const transaction = await retryQuery(() =>
+      prisma.transaction.findFirst({
+        where: {
+          id: req.params.id,
+          userId: req.userId
+        }
+      })
+    );
     
     if (!transaction) {
       return res.status(404).json({ error: 'Transaction not found' });
     }
     
     // Revert account balance
-    const account = await prisma.account.findUnique({
-      where: { id: transaction.accountId }
-    });
+    const account = await retryQuery(() =>
+      prisma.account.findUnique({
+        where: { id: transaction.accountId }
+      })
+    );
     
     const revertedBalance = transaction.type === 'income'
       ? account.balance - transaction.amount
       : account.balance + transaction.amount;
     
-    await prisma.account.update({
-      where: { id: transaction.accountId },
-      data: { balance: revertedBalance }
-    });
+    await retryQuery(() =>
+      prisma.account.update({
+        where: { id: transaction.accountId },
+        data: { balance: revertedBalance }
+      })
+    );
     
     // Delete transaction
     await prisma.transaction.delete({

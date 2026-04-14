@@ -1,54 +1,65 @@
 import { prisma } from '../lib/db.js';
+import { retryQuery } from '../utils/queryRetry.js';
 
 /**
  * Get monthly report data
  * Includes health and finance summaries
+ * All queries auto-retry on connection failures
  */
 export async function getMonthlyReportData(userId, year, month) {
   const startDate = new Date(year, month - 1, 1); // month is 1-indexed in API
   const endDate = new Date(year, month, 0, 23, 59, 59); // Last day of month
   
   // === HEALTH DATA ===
-  const workoutLogs = await prisma.workoutLog.findMany({
-    where: {
-      userId,
-      date: { 
-        gte: startDate,
-        lte: endDate
+  // All queries with automatic retry on connection failures
+  const workoutLogs = await retryQuery(() => 
+    prisma.workoutLog.findMany({
+      where: {
+        userId,
+        date: { 
+          gte: startDate,
+          lte: endDate
+        }
       }
-    }
-  });
+    })
+  );
   
-  const stepLogs = await prisma.stepLog.findMany({
-    where: {
-      userId,
-      date: {
-        gte: startDate,
-        lte: endDate
+  const stepLogs = await retryQuery(() =>
+    prisma.stepLog.findMany({
+      where: {
+        userId,
+        date: {
+          gte: startDate,
+          lte: endDate
+        }
       }
-    }
-  });
+    })
+  );
   
-  const nutritionLogs = await prisma.nutritionLog.findMany({
-    where: {
-      userId,
-      date: {
-        gte: startDate,
-        lte: endDate
+  const nutritionLogs = await retryQuery(() =>
+    prisma.nutritionLog.findMany({
+      where: {
+        userId,
+        date: {
+          gte: startDate,
+          lte: endDate
+        }
       }
-    }
-  });
+    })
+  );
   
-  const bodyMetrics = await prisma.bodyMetric.findMany({
-    where: {
-      userId,
-      date: {
-        gte: startDate,
-        lte: endDate
-      }
-    },
-    orderBy: { date: 'asc' }
-  });
+  const bodyMetrics = await retryQuery(() =>
+    prisma.bodyMetric.findMany({
+      where: {
+        userId,
+        date: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      orderBy: { date: 'asc' }
+    })
+  );
   
   // Workout analysis
   const totalWorkouts = workoutLogs.length;
@@ -84,19 +95,23 @@ export async function getMonthlyReportData(userId, year, month) {
     : null;
   
   // === FINANCE DATA ===
-  const transactions = await prisma.transaction.findMany({
-    where: {
-      userId,
-      date: {
-        gte: startDate,
-        lte: endDate
+  const transactions = await retryQuery(() =>
+    prisma.transaction.findMany({
+      where: {
+        userId,
+        date: {
+          gte: startDate,
+          lte: endDate
+        }
       }
-    }
-  });
+    })
+  );
   
-  const budgets = await prisma.budget.findMany({
-    where: { userId }
-  });
+  const budgets = await retryQuery(() =>
+    prisma.budget.findMany({
+      where: { userId }
+    })
+  );
   
   // Income/Expense summary
   const income = transactions
@@ -144,9 +159,11 @@ export async function getMonthlyReportData(userId, year, month) {
   }
   
   // Account balances
-  const accounts = await prisma.account.findMany({
-    where: { userId }
-  });
+  const accounts = await retryQuery(() =>
+    prisma.account.findMany({
+      where: { userId }
+    })
+  );
   
   const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
   

@@ -3,6 +3,7 @@ import { prisma } from '../lib/db.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { calculateLifeScore, getLatestLifeScore } from '../services/lifeScore.js';
 import { getCorrelations, generateMonthlyNarrative } from '../services/insights.js';
+import { retryQuery } from '../utils/queryRetry.js';
 
 const router = express.Router();
 
@@ -40,13 +41,15 @@ router.get('/history/:days', authMiddleware, async (req, res, next) => {
     const daysBack = parseInt(days) || 30;
     const since = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000);
     
-    const history = await prisma.lifeScore.findMany({
-      where: {
-        userId: req.userId,
-        date: { gte: since }
-      },
-      orderBy: { date: 'asc' }
-    });
+    const history = await retryQuery(() =>
+      prisma.lifeScore.findMany({
+        where: {
+          userId: req.userId,
+          date: { gte: since }
+        },
+        orderBy: { date: 'asc' }
+      })
+    );
     
     res.json(history);
   } catch (err) {

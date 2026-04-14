@@ -5,6 +5,8 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
 import { errorHandler } from './middleware/errorHandler.js';
+import { dbErrorHandler } from './middleware/dbErrorHandler.js';
+import { prisma } from './lib/db.js';
 
 import authRoutes from './routes/auth.js';
 import transactionRoutes from './routes/transactions.js';
@@ -15,6 +17,7 @@ import goalRoutes from './routes/goals.js';
 import insightRoutes from './routes/insights.js';
 import chatRoutes from './routes/chat.js';
 import reportRoutes from './routes/reports.js';
+import diagnosticsRoutes from './routes/diagnostics.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -51,11 +54,15 @@ app.use('/api/goals', goalRoutes);
 app.use('/api/insights', insightRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/diagnostics', diagnosticsRoutes);
 
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
+
+// Database error handler (before generic error handler)
+app.use(dbErrorHandler);
 
 // Error handler (must be last)
 app.use(errorHandler);

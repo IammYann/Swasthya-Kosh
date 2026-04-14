@@ -2,6 +2,7 @@ import express from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/db.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { retryQuery } from '../utils/queryRetry.js';
 
 const router = express.Router();
 
@@ -42,16 +43,18 @@ router.post('/workouts', authMiddleware, async (req, res, next) => {
   try {
     const data = workoutSchema.parse(req.body);
     
-    const workout = await prisma.workoutLog.create({
-      data: {
-        userId: req.userId,
-        type: data.type,
-        durationMinutes: parseInt(data.durationMinutes),
-        caloriesBurned: data.caloriesBurned ? parseInt(data.caloriesBurned) : null,
-        note: data.note,
-        date: new Date(data.date)
-      }
-    });
+    const workout = await retryQuery(() =>
+      prisma.workoutLog.create({
+        data: {
+          userId: req.userId,
+          type: data.type,
+          durationMinutes: parseInt(data.durationMinutes),
+          caloriesBurned: data.caloriesBurned ? parseInt(data.caloriesBurned) : null,
+          note: data.note,
+          date: new Date(data.date)
+        }
+      })
+    );
     
     res.status(201).json(workout);
   } catch (err) {
@@ -97,28 +100,34 @@ router.post('/steps', authMiddleware, async (req, res, next) => {
     const parsedSteps = parseInt(steps);
     
     // Check if already exists for this date
-    const existing = await prisma.stepLog.findFirst({
-      where: {
-        userId: req.userId,
-        date: parsedDate
-      }
-    });
+    const existing = await retryQuery(() =>
+      prisma.stepLog.findFirst({
+        where: {
+          userId: req.userId,
+          date: parsedDate
+        }
+      })
+    );
     
     if (existing) {
-      const updated = await prisma.stepLog.update({
-        where: { id: existing.id },
-        data: { steps: parsedSteps }
-      });
+      const updated = await retryQuery(() =>
+        prisma.stepLog.update({
+          where: { id: existing.id },
+          data: { steps: parsedSteps }
+        })
+      );
       return res.json(updated);
     }
     
-    const stepLog = await prisma.stepLog.create({
-      data: {
-        userId: req.userId,
-        steps: parsedSteps,
-        date: parsedDate
-      }
-    });
+    const stepLog = await retryQuery(() =>
+      prisma.stepLog.create({
+        data: {
+          userId: req.userId,
+          steps: parsedSteps,
+          date: parsedDate
+        }
+      })
+    );
     
     res.status(201).json(stepLog);
   } catch (err) {
@@ -149,15 +158,17 @@ router.post('/body-metrics', authMiddleware, async (req, res, next) => {
       return res.status(400).json({ error: 'Weight and date required' });
     }
     
-    const metric = await prisma.bodyMetric.create({
-      data: {
-        userId: req.userId,
-        weight: parseFloat(weight),
-        bmi: bmi ? parseFloat(bmi) : null,
-        bodyFat: bodyFat ? parseFloat(bodyFat) : null,
-        date: new Date(date)
-      }
-    });
+    const metric = await retryQuery(() =>
+      prisma.bodyMetric.create({
+        data: {
+          userId: req.userId,
+          weight: parseFloat(weight),
+          bmi: bmi ? parseFloat(bmi) : null,
+          bodyFat: bodyFat ? parseFloat(bodyFat) : null,
+          date: new Date(date)
+        }
+      })
+    );
     
     res.status(201).json(metric);
   } catch (err) {
@@ -197,17 +208,19 @@ router.post('/nutrition', authMiddleware, async (req, res, next) => {
       return res.status(400).json({ error: 'Calories and date required' });
     }
     
-    const nutrition = await prisma.nutritionLog.create({
-      data: {
-        userId: req.userId,
-        calories: parseInt(calories),
-        protein: protein ? parseInt(protein) : null,
-        carbs: carbs ? parseInt(carbs) : null,
-        fat: fat ? parseInt(fat) : null,
-        mealName,
-        date: new Date(date)
-      }
-    });
+    const nutrition = await retryQuery(() =>
+      prisma.nutritionLog.create({
+        data: {
+          userId: req.userId,
+          calories: parseInt(calories),
+          protein: protein ? parseInt(protein) : null,
+          carbs: carbs ? parseInt(carbs) : null,
+          fat: fat ? parseInt(fat) : null,
+          mealName,
+          date: new Date(date)
+        }
+      })
+    );
     
     res.status(201).json(nutrition);
   } catch (err) {
