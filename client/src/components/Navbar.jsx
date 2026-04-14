@@ -65,6 +65,9 @@ export default function Navbar() {
             <Link to="/app/insights" className="hover:text-teal transition">
               {t('nav_insights')}
             </Link>
+            <Link to="/app/reports" className="hover:text-teal transition">
+              {t('nav_reports')}
+            </Link>
 
             {lifeScore !== null && (
               <div className="px-4 py-1 rounded-full bg-teal/10 border border-teal text-teal text-sm font-semibold">
