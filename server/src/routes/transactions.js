@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/db.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { retryQuery } from '../utils/queryRetry.js';
+import { checkBudgetAlerts } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -156,6 +157,15 @@ router.post('/', authMiddleware, async (req, res, next) => {
     );
     
     res.status(201).json(transaction);
+    
+    // Check for budget alerts in background (don't wait for response)
+    if (data.type === 'expense') {
+      setImmediate(() => {
+        checkBudgetAlerts(req.userId).catch(err => {
+          console.error('Error checking budget alerts:', err);
+        });
+      });
+    }
   } catch (err) {
     next(err);
   }

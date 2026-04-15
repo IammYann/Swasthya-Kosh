@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/db.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { retryQuery } from '../utils/queryRetry.js';
+import { checkGoalAchievements } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -57,6 +58,13 @@ router.post('/workouts', authMiddleware, async (req, res, next) => {
     );
     
     res.status(201).json(workout);
+    
+    // Check for goal achievements in background
+    setImmediate(() => {
+      checkGoalAchievements(req.userId).catch(err => {
+        console.error('Error checking goal achievements:', err);
+      });
+    });
   } catch (err) {
     next(err);
   }

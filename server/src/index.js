@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import { errorHandler } from './middleware/errorHandler.js';
 import { dbErrorHandler } from './middleware/dbErrorHandler.js';
 import { prisma } from './lib/db.js';
+import { startAllSchedulers, stopAllSchedulers } from './services/digestScheduler.js';
 
 import authRoutes from './routes/auth.js';
 import transactionRoutes from './routes/transactions.js';
@@ -18,6 +19,7 @@ import insightRoutes from './routes/insights.js';
 import chatRoutes from './routes/chat.js';
 import reportRoutes from './routes/reports.js';
 import diagnosticsRoutes from './routes/diagnostics.js';
+import notificationsRoutes from './routes/notifications.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -55,6 +57,7 @@ app.use('/api/insights', insightRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/diagnostics', diagnosticsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -68,7 +71,33 @@ app.use(dbErrorHandler);
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
+  
+  // Initialize email digest schedulers
+  if (process.env.ENABLE_EMAIL_SCHEDULER !== 'false') {
+    startAllSchedulers();
+  }
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('\nShutting down gracefully...');
+  stopAllSchedulers();
+  await prisma.$disconnect();
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  stopAllSchedulers();
+  await prisma.$disconnect();
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });

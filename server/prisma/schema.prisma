@@ -20,6 +20,14 @@ model User {
   incomeRange    String?  // "0-100k" | "100k-500k" etc
   currency       String   @default("NPR")
   profilePicture String?  // base64 encoded image or URL
+  
+  // Email notification preferences
+  emailNotificationsEnabled   Boolean   @default(true)
+  budgetAlertsEnabled         Boolean   @default(true)
+  goalsNotificationsEnabled   Boolean   @default(true)
+  digestEmailFrequency        String    @default("weekly") // "daily", "weekly", "none"
+  lastDigestEmailSentAt       DateTime?
+  
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
