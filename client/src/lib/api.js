@@ -49,4 +49,31 @@ api.interceptors.response.use(
   }
 );
 
+// Email Notification APIs
+export const emailNotificationAPI = {
+  // Send welcome email (public - no authentication)
+  sendWelcomeEmail: (email) => api.post('/notifications/send-welcome-email', { email }),
+  
+  // Send test email to user's account
+  sendTestEmail: () => api.post('/notifications/send-test-email'),
+  
+  // Get email preferences
+  getEmailPreferences: () => api.get('/notifications/preferences/email'),
+  
+  // Update email preferences
+  updateEmailPreferences: (preferences) => api.patch('/notifications/preferences/email', preferences),
+  
+  // Manual trigger: check budget alerts
+  checkBudgetAlerts: () => api.post('/notifications/check/budget-alerts'),
+  
+  // Manual trigger: check goal achievements
+  checkGoalAchievements: () => api.post('/notifications/check/goal-achievements'),
+  
+  // Manual trigger: send daily digest
+  sendDailyDigest: () => api.post('/notifications/digest/daily'),
+  
+  // Manual trigger: send weekly digest
+  sendWeeklyDigest: () => api.post('/notifications/digest/weekly'),
+};
+
 export default api;

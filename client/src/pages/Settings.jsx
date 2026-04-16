@@ -76,6 +76,7 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [testingDigest, setTestingDigest] = useState(null);
+  const [sendingTest, setSendingTest] = useState(false);
 
   useEffect(() => {
     fetchPreferences();
@@ -134,6 +135,26 @@ export default function Settings() {
       });
     } finally {
       setTestingDigest(null);
+    }
+  }
+
+  async function handleSendTestEmail() {
+    setSendingTest(true);
+
+    try {
+      const response = await api.post('/notifications/send-test-email');
+      setMessage({
+        type: 'success',
+        text: response.data.message || t.emailSent
+      });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: err.response?.data?.error || 'Failed to send test email'
+      });
+    } finally {
+      setSendingTest(false);
     }
   }
 
@@ -323,21 +344,39 @@ export default function Settings() {
             <h2 className="text-2xl font-bold text-white mb-2">Test Emails</h2>
             <p className="text-slate-400 mb-6">Send test emails to verify notification settings</p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button
-                onClick={() => handleSendDigest('daily')}
-                disabled={testingDigest !== null || !preferences.emailNotificationsEnabled}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all disabled:opacity-50"
-              >
-                {testingDigest === 'daily' ? 'Sending...' : t.sendDailyDigest}
-              </button>
-              <button
-                onClick={() => handleSendDigest('weekly')}
-                disabled={testingDigest !== null || !preferences.emailNotificationsEnabled}
-                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition-all disabled:opacity-50"
-              >
-                {testingDigest === 'weekly' ? 'Sending...' : t.sendWeeklyDigest}
-              </button>
+            <div className="space-y-4">
+              {/* Send Test Email Button */}
+              <div>
+                <p className="text-slate-300 text-sm mb-2 font-semibold">Quick Test Email</p>
+                <button
+                  onClick={handleSendTestEmail}
+                  disabled={sendingTest || !preferences.emailNotificationsEnabled}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition-all disabled:opacity-50"
+                >
+                  {sendingTest ? 'Sending...' : t.testEmail}
+                </button>
+              </div>
+
+              {/* Send Digest Buttons */}
+              <div>
+                <p className="text-slate-300 text-sm mb-2 font-semibold">Send Digest</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button
+                    onClick={() => handleSendDigest('daily')}
+                    disabled={testingDigest !== null || !preferences.emailNotificationsEnabled}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all disabled:opacity-50"
+                  >
+                    {testingDigest === 'daily' ? 'Sending...' : t.sendDailyDigest}
+                  </button>
+                  <button
+                    onClick={() => handleSendDigest('weekly')}
+                    disabled={testingDigest !== null || !preferences.emailNotificationsEnabled}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition-all disabled:opacity-50"
+                  >
+                    {testingDigest === 'weekly' ? 'Sending...' : t.sendWeeklyDigest}
+                  </button>
+                </div>
+              </div>
             </div>
           </motion.div>
 

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { emailNotificationAPI } from '../lib/api';
 
 const FEATURES = [
   { icon: '💰', label: 'Expense Tracking', desc: 'Track every rupee' },
@@ -13,6 +14,9 @@ const FEATURES = [
 
 export default function LandingPage() {
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailMessage, setEmailMessage] = useState(null);
+  const [emailInput, setEmailInput] = useState('');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,6 +28,34 @@ export default function LandingPage() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleGetStartedSubmit = async (e) => {
+    e.preventDefault();
+    const email = emailInput.trim();
+    
+    if (!email) return;
+    
+    setEmailLoading(true);
+    setEmailMessage(null);
+
+    try {
+      await emailNotificationAPI.sendWelcomeEmail(email);
+      setEmailMessage({
+        type: 'success',
+        text: `Welcome email sent to ${email}! Check your inbox.`
+      });
+      setEmailInput('');
+      setTimeout(() => setEmailMessage(null), 5000);
+    } catch (error) {
+      setEmailMessage({
+        type: 'error',
+        text: error.response?.data?.error || 'Failed to send email. Please try again.'
+      });
+      setTimeout(() => setEmailMessage(null), 5000);
+    } finally {
+      setEmailLoading(false);
+    }
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -243,26 +275,41 @@ export default function LandingPage() {
 
             <motion.form
               className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto mb-12"
-              onSubmit={(e) => {
-                e.preventDefault();
-                alert('Thanks for your interest! Registration form:', e.currentTarget.email.value);
-              }}
+              onSubmit={handleGetStartedSubmit}
             >
               <input
                 type="email"
                 placeholder="Your email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
                 className="flex-1 px-4 py-3 bg-navy/50 border border-teal/30 rounded-lg focus:border-teal focus:outline-none"
                 required
+                disabled={emailLoading}
               />
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 type="submit"
-                className="px-8 py-3 bg-teal text-navy rounded-lg font-bold hover:bg-teal/90"
+                disabled={emailLoading}
+                className="px-8 py-3 bg-teal text-navy rounded-lg font-bold hover:bg-teal/90 disabled:opacity-50"
               >
-                Get Started
+                {emailLoading ? 'Sending...' : 'Get Started'}
               </motion.button>
             </motion.form>
+
+            {emailMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`mb-6 p-3 rounded-lg text-sm font-semibold ${
+                  emailMessage.type === 'success'
+                    ? 'bg-green-500/20 text-green-300 border border-green-500/50'
+                    : 'bg-red-500/20 text-red-300 border border-red-500/50'
+                }`}
+              >
+                {emailMessage.text}
+              </motion.div>
+            )}
 
             <p className="text-sm text-gray-400">
               Made for Nepal 🇳🇵 | <a href="#" className="text-teal hover:underline">Privacy Policy</a>

@@ -349,5 +349,81 @@ Great progress this week! Continue maintaining this momentum to achieve your hea
     `;
 
     return { htmlContent, textContent };
+  },
+
+  welcome: (email) => {
+    const htmlContent = `
+    <html>
+      <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <h2 style="color: #00D4B4; margin-bottom: 20px;">🏔️ Welcome to Svasthya Kosh</h2>
+          
+          <p style="color: #666; font-size: 16px; line-height: 1.6;">
+            Hello,
+          </p>
+          
+          <p style="color: #666; font-size: 16px; line-height: 1.6;">
+            Thank you for your interest in Svasthya Kosh! We're excited to help you take control of your health and wealth in one unified platform.
+          </p>
+          
+          <div style="background: linear-gradient(135deg, rgba(0, 212, 180, 0.1) 0%, rgba(0, 212, 180, 0.05) 100%); border-left: 4px solid #00D4B4; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <p style="margin: 0; color: #333; font-size: 14px;">
+              <strong>What You'll Get:</strong><br>
+              ✓ Track your health and expenses together<br>
+              ✓ AI-powered insights for better decisions<br>
+              ✓ Life Score - your wellness in one number<br>
+              ✓ Budget alerts and financial goals<br>
+              ✓ Smart daily & weekly summaries
+            </p>
+          </div>
+          
+          <p style="color: #666; font-size: 16px; line-height: 1.6;">
+            <strong>Ready to get started?</strong> Sign up now and join thousands of Nepali people taking control of their health and wealth.
+          </p>
+          
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://svasthya-kosh.app/register" style="display: inline-block; padding: 12px 30px; background-color: #00D4B4; color: #1a1a1a; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+              Create Your Account
+            </a>
+          </p>
+          
+          <p style="color: #666; font-size: 14px; margin-top: 30px;">
+            Questions? We're here to help. Reply to this email or visit our support page.
+          </p>
+          
+          <p style="color: #999; font-size: 12px; margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+            Made for Nepal 🇳🇵 by Svasthya Kosh Team<br>
+            This is an automated message. Please do not reply to this email.
+          </p>
+        </div>
+      </body>
+    </html>
+    `;
+
+    const textContent = `
+Welcome to Svasthya Kosh
+
+Hello,
+
+Thank you for your interest in Svasthya Kosh! We're excited to help you take control of your health and wealth in one unified platform.
+
+What You'll Get:
+✓ Track your health and expenses together
+✓ AI-powered insights for better decisions
+✓ Life Score - your wellness in one number
+✓ Budget alerts and financial goals
+✓ Smart daily & weekly summaries
+
+Ready to get started? Sign up now and join thousands of Nepali people taking control of their health and wealth.
+
+Create Your Account: https://svasthya-kosh.app/register
+
+Questions? We're here to help. Reply to this email or visit our support page.
+
+Made for Nepal 🇳🇵 by Svasthya Kosh Team
+This is an automated message. Please do not reply to this email.
+    `;
+
+    return { htmlContent, textContent };
   }
 };
